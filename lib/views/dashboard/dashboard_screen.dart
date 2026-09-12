@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../controllers/inventory_controller.dart';
 import '../../controllers/transaction_controller.dart';
 import '../../controllers/main_controller.dart';
+import '../../controllers/auth_controller.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_strings.dart';
 import '../inventory/add_edit_inventory_screen.dart';
@@ -47,7 +48,7 @@ class DashboardScreen extends StatelessWidget {
                 const SizedBox(height: 24),
                 _buildFinanceOverview(context),
                 const SizedBox(height: 24),
-                _buildPeriodFilter(),
+                _buildPeriodFilter(context),
                 const SizedBox(height: 16),
                 _buildTransactionStats(),
                 const SizedBox(height: 32),
@@ -79,18 +80,26 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return "Good Morning,";
+    if (hour < 17) return "Good Afternoon,";
+    return "Good Evening,";
+  }
+
   Widget _buildHeader(BuildContext context) {
+    final AuthController authController = Get.find<AuthController>();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Good Morning,",
+          _getGreeting(),
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
         ),
-        Text(
-          "Shop Administrator",
+        Obx(() => Text(
+          authController.currentUser.value?.shopName ?? "Shop Administrator",
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-        ),
+        )),
       ],
     );
   }
@@ -126,14 +135,14 @@ class DashboardScreen extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+            colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.8)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.3),
+              color: AppColors.primary.withValues(alpha: 0.3),
               blurRadius: 15,
               offset: const Offset(0, 8),
             )
@@ -148,7 +157,7 @@ class DashboardScreen extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              "PKR ${inventoryController.totalInvestment.toStringAsFixed(0)}",
+              "PKR ${inventoryController.currentStockValue.toStringAsFixed(0)}",
               style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
@@ -160,6 +169,12 @@ class DashboardScreen extends StatelessWidget {
                   value: "PKR ${inventoryController.expectedProfit.toStringAsFixed(0)}",
                   icon: Icons.trending_up,
                 ),
+                Container(width: 1, height: 40, color: Colors.white24),
+                Obx(() => _buildMiniFinanceItem(
+                  label: "Net Balance",
+                  value: "PKR ${transactionController.netIncome.toStringAsFixed(0)}",
+                  icon: Icons.account_balance_wallet_outlined,
+                )),
                 Container(width: 1, height: 40, color: Colors.white24),
                 _buildMiniFinanceItem(
                   label: "Available",
@@ -191,7 +206,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPeriodFilter() {
+  Widget _buildPeriodFilter(BuildContext context) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Obx(() => Row(
@@ -205,7 +220,9 @@ class DashboardScreen extends StatelessWidget {
               onSelected: (_) => transactionController.selectedPeriod.value = period,
               selectedColor: AppColors.primary,
               labelStyle: TextStyle(
-                color: isSelected ? Colors.white : Colors.black,
+                color: isSelected 
+                    ? Colors.white 
+                    : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black87),
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
@@ -331,9 +348,9 @@ class _ActionButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.2)),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
         child: Column(
           children: [
@@ -361,7 +378,7 @@ class _TransactionStatTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.1)),
+        border: Border.all(color: color.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -396,7 +413,7 @@ class _ActivityTile extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.05),
+                color: AppColors.primary.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.phone_android_rounded, color: AppColors.primary),
@@ -419,7 +436,7 @@ class _ActivityTile extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: (item.status == 'Available' ? AppColors.success : AppColors.textSecondary).withOpacity(0.1),
+                    color: (item.status == 'Available' ? AppColors.success : AppColors.textSecondary).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(

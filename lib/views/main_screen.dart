@@ -9,6 +9,9 @@ import 'dashboard/dashboard_screen.dart';
 import 'inventory/inventory_list_screen.dart';
 import 'profile/profile_screen.dart';
 
+import 'history/history_screen.dart';
+import 'trade/trade_screen.dart';
+
 class MainScreen extends StatelessWidget {
   const MainScreen({super.key});
 
@@ -19,7 +22,9 @@ class MainScreen extends StatelessWidget {
     final List<Widget> screens = [
       DashboardScreen(),
       InventoryListScreen(),
-      ProfileScreen(),
+      const TradeScreen(),
+      const HistoryScreen(),
+      const ProfileScreen(),
     ];
 
     return Scaffold(
@@ -33,33 +38,41 @@ class MainScreen extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               blurRadius: 20,
-              color: Colors.black.withOpacity(.1),
+              color: Colors.black.withValues(alpha: .1),
             )
           ],
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 8),
             child: Obx(() => GNav(
               rippleColor: Colors.grey[300]!,
               hoverColor: Colors.grey[100]!,
-              gap: 8,
+              gap: 4,
               activeColor: AppColors.primary,
-              iconSize: 24,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              iconSize: 22,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               duration: const Duration(milliseconds: 400),
-              tabBackgroundColor: AppColors.primary.withOpacity(0.1),
+              tabBackgroundColor: AppColors.primary.withValues(alpha: 0.1),
               color: Theme.of(context).brightness == Brightness.dark ? Colors.white54 : AppColors.textSecondary,
-              tabs: const [
-                GButton(
+              tabs: [
+                const GButton(
                   icon: LineIcons.pieChart,
-                  text: 'Dashboard',
+                  text: 'Home',
                 ),
-                GButton(
+                const GButton(
                   icon: LineIcons.boxes,
-                  text: 'Inventory',
+                  text: 'Stock',
                 ),
-                GButton(
+                const GButton(
+                  icon: Icons.swap_horiz,
+                  text: 'Trade',
+                ),
+                const GButton(
+                  icon: LineIcons.history,
+                  text: 'History',
+                ),
+                const GButton(
                   icon: LineIcons.user,
                   text: 'Profile',
                 ),

@@ -87,7 +87,13 @@ class InventoryController extends GetxController {
   }
 
   // Computed Properties for Stats
-  double get totalInvestment => inventoryList.fold(0.0, (total, item) => total + item.purchasePrice);
+  // Sum of purchase prices for currently available items only
+  double get currentStockValue => inventoryList
+      .where((item) => item.status == 'Available')
+      .fold(0.0, (total, item) => total + item.purchasePrice);
+
+  double get totalHistoricalInvestment => inventoryList.fold(0.0, (total, item) => total + item.purchasePrice);
+
   double get expectedProfit => inventoryList.fold(0.0, (total, item) {
     return item.status == 'Available' ? total + (item.sellingPrice - item.purchasePrice) : total;
   });

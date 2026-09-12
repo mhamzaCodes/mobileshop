@@ -38,6 +38,10 @@ class _BuyProductScreenState extends State<BuyProductScreen> {
   String _networkStatus = 'PTA Approved';
   bool _hasBox = false;
   bool _hasCharger = false;
+  bool _hasWarranty = false;
+
+  final List<String> _conditions = ['New', 'Used - 10/10', 'Used - 9/10', 'Used - 8/10'];
+  final List<String> _networkStatuses = ['PTA Approved', 'Non-PTA', 'JV'];
 
   @override
   void dispose() {
@@ -57,16 +61,32 @@ class _BuyProductScreenState extends State<BuyProductScreen> {
     super.dispose();
   }
 
-  void _addImei() {
+  void _addImeiField() {
     if (_imeiControllers.length < 4) {
       setState(() => _imeiControllers.add(TextEditingController()));
     }
   }
 
+  void _removeImeiField(int index) {
+    if (_imeiControllers.length > 1) {
+      setState(() {
+        _imeiControllers[index].dispose();
+        _imeiControllers.removeAt(index);
+      });
+    }
+  }
+
   void _processPurchase() async {
     if (_formKey.currentState!.validate()) {
-      final String deviceId = DateTime.now().millisecondsSinceEpoch.toString();
       final List<String> imeis = _imeiControllers.map((c) => c.text.trim()).where((t) => t.isNotEmpty).toList();
+      
+      if (imeis.isEmpty) {
+        Get.snackbar("Error", "At least one IMEI is required", 
+          backgroundColor: AppColors.error, colorText: Colors.white);
+        return;
+      }
+
+      final String deviceId = DateTime.now().millisecondsSinceEpoch.toString();
 
       final device = MobileDeviceModel(
         id: deviceId,
@@ -82,7 +102,7 @@ class _BuyProductScreenState extends State<BuyProductScreen> {
         condition: _condition,
         hasBox: _hasBox,
         hasCharger: _hasCharger,
-        hasWarranty: false,
+        hasWarranty: _hasWarranty,
         networkStatus: _networkStatus,
       );
 
@@ -117,23 +137,21 @@ class _BuyProductScreenState extends State<BuyProductScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(16.0),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text("Seller Details", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary)),
-                const SizedBox(height: 16),
+                _buildSectionTitle("Seller Details"),
                 _buildTextField(_sellerNameController, "Seller Name", Icons.person_outline),
                 const SizedBox(height: 12),
                 _buildTextField(_sellerContactController, "Seller Contact", Icons.phone_outlined, keyboardType: TextInputType.phone),
                 const SizedBox(height: 12),
                 _buildTextField(_sellerCnicController, "Seller CNIC", Icons.badge_outlined),
                 
-                const SizedBox(height: 32),
-                const Text("Device Specifications", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary)),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
+                _buildSectionTitle("Basic Info"),
                 _buildTextField(_brandController, AppStrings.brandLabel, Icons.branding_watermark),
                 const SizedBox(height: 12),
                 _buildTextField(_modelController, AppStrings.modelLabel, Icons.phone_android),
@@ -146,31 +164,106 @@ class _BuyProductScreenState extends State<BuyProductScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
+                _buildTextField(_colorController, AppStrings.colorLabel, Icons.color_lens),
+
+                const SizedBox(height: 24),
+                _buildSectionTitle("Pricing"),
                 Row(
                   children: [
-                    Expanded(child: _buildTextField(_purchasePriceController, "Buy Price (PKR)", Icons.download, keyboardType: TextInputType.number)),
+                    Expanded(child: _buildTextField(_purchasePriceController, "Buy Price (PKR)", Icons.download, isNumber: true)),
                     const SizedBox(width: 12),
-                    Expanded(child: _buildTextField(_sellingPriceController, "Target Sell Price (PKR)", Icons.upload, keyboardType: TextInputType.number)),
+                    Expanded(child: _buildTextField(_sellingPriceController, "Target Sell Price (PKR)", Icons.upload, isNumber: true)),
                   ],
                 ),
-                const SizedBox(height: 12),
-                _buildDropdown("Network Status", _networkStatus, ["PTA Approved", "Non-PTA", "JV"], (v) => setState(() => _networkStatus = v!)),
                 
                 const SizedBox(height: 24),
-                const Text("IMEI Numbers", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                ..._imeiControllers.asMap().entries.map((e) => Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: _buildTextField(e.value, "IMEI ${e.key + 1}", Icons.qr_code, keyboardType: TextInputType.number),
-                )),
+                _buildSectionTitle("Condition & Accessories"),
+                _buildDropdown("Condition", _condition, _conditions, (val) => setState(() => _condition = val!)),
+                const SizedBox(height: 12),
+                _buildDropdown("Network Status", _networkStatus, _networkStatuses, (val) => setState(() => _networkStatus = val!)),
+                const SizedBox(height: 12),
+                Card(
+                  elevation: 0,
+                  color: Theme.of(context).cardColor,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[800]! : AppColors.border)),
+                  child: Column(
+                    children: [
+                      SwitchListTile(
+                        title: const Text(AppStrings.hasBox),
+                        value: _hasBox,
+                        onChanged: (val) => setState(() => _hasBox = val),
+                        activeColor: AppColors.primary,
+                      ),
+                      const Divider(height: 1),
+                      SwitchListTile(
+                        title: const Text(AppStrings.hasCharger),
+                        value: _hasCharger,
+                        onChanged: (val) => setState(() => _hasCharger = val),
+                        activeColor: AppColors.primary,
+                      ),
+                      const Divider(height: 1),
+                      SwitchListTile(
+                        title: const Text(AppStrings.hasWarranty),
+                        value: _hasWarranty,
+                        onChanged: (val) => setState(() => _hasWarranty = val),
+                        activeColor: AppColors.primary,
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+                _buildSectionTitle(AppStrings.imeiSectionTitle),
+                ...List.generate(_imeiControllers.length, (index) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12.0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _imeiControllers[index],
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: '${AppStrings.imeiLabelPrefix} ${index + 1}',
+                              prefixIcon: const Icon(Icons.qr_code),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              filled: true,
+                            ),
+                            validator: (value) {
+                              if (index == 0 && (value == null || value.isEmpty)) {
+                                return AppStrings.errorRequiredField;
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        if (_imeiControllers.length > 1)
+                          IconButton(
+                            icon: const Icon(Icons.remove_circle_outline, color: AppColors.error),
+                            onPressed: () => _removeImeiField(index),
+                          ),
+                      ],
+                    ),
+                  );
+                }),
                 if (_imeiControllers.length < 4)
-                  TextButton.icon(onPressed: _addImei, icon: const Icon(Icons.add), label: const Text("Add Another IMEI")),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: _addImeiField,
+                      icon: const Icon(Icons.add, color: AppColors.primary),
+                      label: const Text(AppStrings.addImeiButton, style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
 
                 const SizedBox(height: 32),
                 ElevatedButton(
                   onPressed: _processPurchase,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: const Text("Confirm Purchase", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
@@ -183,20 +276,49 @@ class _BuyProductScreenState extends State<BuyProductScreen> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String label, IconData icon, {TextInputType keyboardType = TextInputType.text}) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon)),
-      validator: (v) => v!.isEmpty ? "Required" : null,
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Text(
+        title,
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary),
+      ),
     );
   }
 
-  Widget _buildDropdown(String label, String value, List<String> items, Function(String?) onChanged) {
+  Widget _buildTextField(TextEditingController controller, String label, IconData icon, {bool isNumber = false, TextInputType? keyboardType}) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType ?? (isNumber ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text),
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        filled: true,
+      ),
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) {
+          return AppStrings.errorRequiredField;
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildDropdown(String label, String value, List<String> items, void Function(String?) onChanged) {
     return DropdownButtonFormField<String>(
       value: value,
-      decoration: InputDecoration(labelText: label),
-      items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        filled: true,
+      ),
+      items: items.map((String item) {
+        return DropdownMenuItem<String>(
+          value: item,
+          child: Text(item),
+        );
+      }).toList(),
       onChanged: onChanged,
     );
   }
