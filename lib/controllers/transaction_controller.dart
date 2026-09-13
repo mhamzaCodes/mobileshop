@@ -18,14 +18,25 @@ class TransactionController extends GetxController {
 
   void _bindTransactions() {
     if (_authController.currentUser.value != null) {
-      _listenToTransactions(_authController.currentUser.value!.uid);
+      final user = _authController.selectedUserForAdmin.value ?? _authController.currentUser.value!;
+      _listenToTransactions(user.uid);
     }
 
     ever(_authController.currentUser, (user) {
       if (user != null) {
-        _listenToTransactions(user.uid);
+        final targetUser = _authController.selectedUserForAdmin.value ?? user;
+        _listenToTransactions(targetUser.uid);
       } else {
         transactionsList.clear();
+      }
+    });
+
+    ever(_authController.selectedUserForAdmin, (user) {
+      if (_authController.isAdmin.value) {
+        final targetUser = user ?? _authController.currentUser.value;
+        if (targetUser != null) {
+          _listenToTransactions(targetUser.uid);
+        }
       }
     });
   }

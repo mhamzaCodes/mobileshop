@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../controllers/inventory_controller.dart';
 import '../../models/mobile_device_model.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/formatters.dart';
 import 'add_edit_inventory_screen.dart';
 
 class ProductDetailsScreen extends StatelessWidget {
@@ -119,7 +120,7 @@ class ProductDetailsScreen extends StatelessWidget {
       children: [
         Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
         Text(
-          "PKR ${price.toStringAsFixed(0)}",
+          AppFormatters.formatCurrency(price),
           style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
         ),
       ],

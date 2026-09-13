@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'controllers/auth_controller.dart';
 import 'controllers/inventory_controller.dart';
+import 'controllers/main_controller.dart';
 import 'controllers/theme_controller.dart';
 import 'controllers/transaction_controller.dart';
 import 'firebase_options.dart';
@@ -20,6 +21,7 @@ void main() async {
   );
   Get.put(ThemeController());
   Get.put(AuthController());
+  Get.put(MainController());
   Get.put(InventoryController());
   Get.put(TransactionController());
   runApp(const MyApp());
@@ -35,7 +37,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.light,
       home: FirebaseAuth.instance.currentUser != null 
           ? const MainScreen() 
           : LoginScreen(),

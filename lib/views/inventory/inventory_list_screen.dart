@@ -5,6 +5,7 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_strings.dart';
 import 'add_edit_inventory_screen.dart';
 import 'product_details_screen.dart';
+import '../../utils/formatters.dart';
 
 class InventoryListScreen extends StatelessWidget {
   InventoryListScreen({super.key});
@@ -171,7 +172,7 @@ class InventoryListScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text('PKR ${item.sellingPrice.toStringAsFixed(0)}',
+            Text(AppFormatters.formatCurrency(item.sellingPrice),
                 style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.success, fontSize: 16)),
             Container(
               margin: const EdgeInsets.only(top: 4),

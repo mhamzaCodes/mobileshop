@@ -7,7 +7,7 @@ class ThemeController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    isDarkMode.value = Get.isPlatformDarkMode;
+    isDarkMode.value = false;
   }
 
   void toggleTheme() {

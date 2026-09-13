@@ -25,18 +25,29 @@ class InventoryController extends GetxController {
   }
 
   void _bindInventory() {
-    // Check if user is already logged in
+    // Check if user is already logged in or if admin has a selected user
     if (_authController.currentUser.value != null) {
-      final user = _authController.currentUser.value!;
+      final user = _authController.selectedUserForAdmin.value ?? _authController.currentUser.value!;
       _listenToProducts(user.uid, user.shopName);
     }
 
-    // Listen to future changes
+    // Listen to current user changes (login/logout)
     ever(_authController.currentUser, (user) {
-      if (user != null && user.shopName.isNotEmpty) {
-        _listenToProducts(user.uid, user.shopName);
+      if (user != null) {
+        final targetUser = _authController.selectedUserForAdmin.value ?? user;
+        _listenToProducts(targetUser.uid, targetUser.shopName);
       } else {
         inventoryList.clear();
+      }
+    });
+
+    // Listen to admin selecting a different user to view
+    ever(_authController.selectedUserForAdmin, (user) {
+      if (_authController.isAdmin.value) {
+        final targetUser = user ?? _authController.currentUser.value;
+        if (targetUser != null) {
+          _listenToProducts(targetUser.uid, targetUser.shopName);
+        }
       }
     });
   }

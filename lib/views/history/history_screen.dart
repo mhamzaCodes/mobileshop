@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../controllers/transaction_controller.dart';
 import '../../models/transaction_model.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/formatters.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -151,7 +152,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  "${isSell ? '+' : '-'} PKR ${t.amount.toStringAsFixed(0)}",
+                  "${isSell ? '+' : '-'} ${AppFormatters.formatCurrency(t.amount)}",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: isSell ? AppColors.success : AppColors.error,

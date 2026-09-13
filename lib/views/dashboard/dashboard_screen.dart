@@ -7,10 +7,10 @@ import '../../controllers/main_controller.dart';
 import '../../controllers/auth_controller.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_strings.dart';
-import '../inventory/add_edit_inventory_screen.dart';
 import '../inventory/product_details_screen.dart';
 import '../inventory/buy_product_screen.dart';
 import '../inventory/sell_product_screen.dart';
+import '../../utils/formatters.dart';
 
 class DashboardScreen extends StatelessWidget {
   DashboardScreen({super.key});
@@ -21,16 +21,16 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(AppStrings.dashboardTitle, style: TextStyle(fontWeight: FontWeight.bold)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_circle, color: AppColors.primary, size: 28),
-            onPressed: () => Get.to(() => const AddEditInventoryScreen()),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
+      // appBar: AppBar(
+      //   title: const Text(AppStrings.dashboardTitle, style: TextStyle(fontWeight: FontWeight.bold)),
+      //   actions: [
+      //     IconButton(
+      //       icon: const Icon(Icons.add_circle, color: AppColors.primary, size: 28),
+      //       onPressed: () => Get.to(() => const AddEditInventoryScreen()),
+      //     ),
+      //     const SizedBox(width: 8),
+      //   ],
+      // ),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
@@ -43,34 +43,29 @@ class DashboardScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildHeader(context),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
+                _buildFinanceSummary(context),
+                const SizedBox(height: 24),
+                _buildQuickActionsTitle(),
+                const SizedBox(height: 12),
                 _buildQuickActions(),
-                const SizedBox(height: 24),
-                _buildFinanceOverview(context),
-                const SizedBox(height: 24),
-                _buildPeriodFilter(context),
+                const SizedBox(height: 32),
+                _buildSectionHeader("Cash Flow Analysis", trailing: _buildPeriodSelector(context)),
                 const SizedBox(height: 16),
-                _buildTransactionStats(),
+                _buildTransactionMatrix(),
                 const SizedBox(height: 32),
-                _buildChartSection(context),
+                _buildSectionHeader("Stock Insights"),
+                const SizedBox(height: 16),
+                _buildInventoryChart(context),
                 const SizedBox(height: 32),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      AppStrings.recentMobiles,
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Get.find<MainController>().changeTabIndex(1);
-                      },
-                      child: const Text('View All', style: TextStyle(color: AppColors.primary)),
-                    ),
-                  ],
+                _buildSectionHeader(
+                  AppStrings.recentMobiles,
+                  trailing: TextButton(
+                    onPressed: () => Get.find<MainController>().changeTabIndex(1),
+                    child: const Text('View All', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                  ),
                 ),
-                const SizedBox(height: 8),
-                _buildRecentInventoryList(context),
+                _buildActivityFeed(context),
                 const SizedBox(height: 20),
               ],
             ),
@@ -80,107 +75,81 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  String _getGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return "Good Morning,";
-    if (hour < 17) return "Good Afternoon,";
-    return "Good Evening,";
-  }
-
   Widget _buildHeader(BuildContext context) {
     final AuthController authController = Get.find<AuthController>();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          _getGreeting(),
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-        ),
-        Obx(() => Text(
-          authController.currentUser.value?.shopName ?? "Shop Administrator",
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-        )),
-      ],
-    );
-  }
+    final hour = DateTime.now().hour;
+    String greeting = "Good Morning";
+    if (hour >= 12 && hour < 17) {
+      greeting = "Good Afternoon";
+    } else if (hour >= 17) {
+      greeting = "Good Evening";
+    }
 
-  Widget _buildQuickActions() {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Expanded(
-          child: _ActionButton(
-            label: "Buy",
-            icon: Icons.add_shopping_cart,
-            color: AppColors.primary,
-            onTap: () => Get.to(() => const BuyProductScreen()),
-          ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "$greeting,",
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary, letterSpacing: 0.5),
+            ),
+            Obx(() => Text(
+              authController.currentUser.value?.shopName ?? "My Mobile Shop",
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, letterSpacing: -0.5),
+            )),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _ActionButton(
-            label: "Sell",
-            icon: Icons.sell_outlined,
-            color: AppColors.success,
-            onTap: () => Get.to(() => const SellProductScreen()),
-          ),
-        ),
+        CircleAvatar(
+          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+          child: const Icon(Icons.notifications_none_rounded, color: AppColors.primary),
+        )
       ],
     );
   }
 
-  Widget _buildFinanceOverview(BuildContext context) {
+  Widget _buildFinanceSummary(BuildContext context) {
     return Obx(() {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.8)],
+          gradient: const LinearGradient(
+            colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)], // Modern Navy to Blue
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.3),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
+              color: Colors.blue.withValues(alpha: 0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
             )
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Current Stock Value",
-              style: TextStyle(color: Colors.white70, fontSize: 14),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              "PKR ${inventoryController.currentStockValue.toStringAsFixed(0)}",
-              style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildMiniFinanceItem(
-                  label: "Profit Potential",
-                  value: "PKR ${inventoryController.expectedProfit.toStringAsFixed(0)}",
-                  icon: Icons.trending_up,
-                ),
-                Container(width: 1, height: 40, color: Colors.white24),
-                Obx(() => _buildMiniFinanceItem(
-                  label: "Net Balance",
-                  value: "PKR ${transactionController.netIncome.toStringAsFixed(0)}",
-                  icon: Icons.account_balance_wallet_outlined,
-                )),
-                Container(width: 1, height: 40, color: Colors.white24),
-                _buildMiniFinanceItem(
-                  label: "Available",
-                  value: "${inventoryController.totalDevicesAvailable} Units",
-                  icon: Icons.inventory_2_outlined,
-                ),
+                const Text("Current Stock Value", style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500)),
+                const Icon(Icons.account_balance_wallet_rounded, color: Colors.white70, size: 20),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              AppFormatters.formatCurrency(inventoryController.currentStockValue),
+              style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: -1),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                _buildFinanceMetric("Potential Profit", AppFormatters.formatCurrency(inventoryController.expectedProfit), Icons.trending_up),
+                const Spacer(),
+                _buildFinanceMetric("Units in Shop", "${inventoryController.totalDevicesAvailable}", Icons.inventory_2_outlined),
               ],
             ),
           ],
@@ -189,41 +158,92 @@ class DashboardScreen extends StatelessWidget {
     });
   }
 
-  Widget _buildMiniFinanceItem({required String label, required String value, required IconData icon}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildFinanceMetric(String label, String value, IconData icon) {
+    return Row(
       children: [
-        Row(
-          children: [
-            Icon(icon, size: 16, color: Colors.white70),
-            const SizedBox(width: 4),
-            Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
-          ],
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(color: Colors.white12, borderRadius: BorderRadius.circular(8)),
+          child: Icon(icon, size: 14, color: Colors.white),
         ),
-        const SizedBox(height: 4),
-        Text(value, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+        const SizedBox(width: 10),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: const TextStyle(color: Colors.white60, fontSize: 11)),
+            Text(value, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+          ],
+        )
       ],
     );
   }
 
-  Widget _buildPeriodFilter(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
+  Widget _buildQuickActionsTitle() {
+    return const Text("Quick Actions", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: -0.5));
+  }
+
+  Widget _buildQuickActions() {
+    return Row(
+      children: [
+        Expanded(
+          child: _ActionCard(
+            label: "Buy Product",
+            subtitle: "Purchase from local",
+            icon: Icons.add_shopping_cart_rounded,
+            color: AppColors.primary,
+            onTap: () => Get.to(() => const BuyProductScreen()),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _ActionCard(
+            label: "Sell Product",
+            subtitle: "Sell to customer",
+            icon: Icons.sell_rounded,
+            color: const Color(0xFF10B981), // Emerald
+            onTap: () => Get.to(() => const SellProductScreen()),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionHeader(String title, {Widget? trailing}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
+        if (trailing != null) trailing,
+      ],
+    );
+  }
+
+  Widget _buildPeriodSelector(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+      ),
       child: Obx(() => Row(
         children: ['Daily', 'Weekly', 'Monthly'].map((period) {
           final isSelected = transactionController.selectedPeriod.value == period;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: ChoiceChip(
-              label: Text(period),
-              selected: isSelected,
-              onSelected: (_) => transactionController.selectedPeriod.value = period,
-              selectedColor: AppColors.primary,
-              labelStyle: TextStyle(
-                color: isSelected 
-                    ? Colors.white 
-                    : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black87),
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          return GestureDetector(
+            onTap: () => transactionController.selectedPeriod.value = period,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primary : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                period,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected ? Colors.white : AppColors.textSecondary,
+                ),
               ),
             ),
           );
@@ -232,23 +252,34 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTransactionStats() {
+  Widget _buildTransactionMatrix() {
     return Obx(() {
       return Row(
         children: [
           Expanded(
-            child: _TransactionStatTile(
-              label: "Inflow (Sales)",
-              value: "PKR ${transactionController.totalInflow.toStringAsFixed(0)}",
-              color: AppColors.success,
+            child: _MatrixTile(
+              label: "Revenue (In)",
+              value: AppFormatters.formatCurrency(transactionController.totalInflow),
+              icon: Icons.arrow_downward_rounded,
+              color: const Color(0xFF10B981),
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: _TransactionStatTile(
-              label: "Outflow (Purch)",
-              value: "PKR ${transactionController.totalOutflow.toStringAsFixed(0)}",
-              color: AppColors.error,
+            child: _MatrixTile(
+              label: "Expense (Out)",
+              value: AppFormatters.formatCurrency(transactionController.totalOutflow),
+              icon: Icons.arrow_upward_rounded,
+              color: const Color(0xFFEF4444),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _MatrixTile(
+              label: "Net Profit",
+              value: AppFormatters.formatCurrency(transactionController.netIncome),
+              icon: Icons.account_balance_rounded,
+              color: AppColors.primary,
             ),
           ),
         ],
@@ -256,107 +287,121 @@ class DashboardScreen extends StatelessWidget {
     });
   }
 
-  Widget _buildChartSection(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Stock Breakdown",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Obx(() {
-            final data = inventoryController.brandDistribution;
-            if (data.isEmpty) return const Center(child: Text("No stock data."));
+  Widget _buildInventoryChart(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.3)),
+      ),
+      child: Obx(() {
+        final data = inventoryController.brandDistribution;
+        if (data.isEmpty) return const Center(child: Text("No stock data available."));
 
-            final colors = [AppColors.primary, AppColors.secondary, AppColors.accent, AppColors.success, AppColors.warning];
-            int index = 0;
+        final colors = [const Color(0xFF3B82F6), const Color(0xFF10B981), const Color(0xFFF59E0B), const Color(0xFF8B5CF6), const Color(0xFFEC4899)];
+        int index = 0;
 
-            return Column(
-              children: [
-                SizedBox(
-                  height: 150,
-                  child: PieChart(
+        return Column(
+          children: [
+            SizedBox(
+              height: 160,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  PieChart(
                     PieChartData(
-                      sectionsSpace: 2,
-                      centerSpaceRadius: 40,
+                      sectionsSpace: 4,
+                      centerSpaceRadius: 55,
                       sections: data.entries.map((e) {
                         final color = colors[index++ % colors.length];
                         return PieChartSectionData(
                           color: color,
                           value: e.value,
                           title: "",
-                          radius: 20,
+                          radius: 18,
                         );
                       }).toList(),
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 8,
-                  children: data.entries.toList().asMap().entries.map((entry) {
-                    final color = colors[entry.key % colors.length];
-                    return Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-                        const SizedBox(width: 4),
-                        Text(entry.value.key, style: const TextStyle(fontSize: 11)),
-                      ],
-                    );
-                  }).toList(),
-                )
-              ],
-            );
-          }),
-        ),
-      ],
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text("${inventoryController.totalDevicesAvailable}", style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: -1)),
+                      const Text("Stock Units", style: TextStyle(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
+                    ],
+                  )
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            Wrap(
+              spacing: 16,
+              runSpacing: 10,
+              alignment: WrapAlignment.center,
+              children: data.entries.toList().asMap().entries.map((entry) {
+                final color = colors[entry.key % colors.length];
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+                    const SizedBox(width: 6),
+                    Text(entry.value.key, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                    const SizedBox(width: 4),
+                    Text("${entry.value.value.toInt()}", style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  ],
+                );
+              }).toList(),
+            )
+          ],
+        );
+      }),
     );
   }
 
-  Widget _buildRecentInventoryList(BuildContext context) {
+  Widget _buildActivityFeed(BuildContext context) {
     return Obx(() {
       final recentItems = inventoryController.inventoryList.reversed.take(5).toList();
-      if (recentItems.isEmpty) return const Center(child: Text("Nothing here yet."));
+      if (recentItems.isEmpty) return const Center(child: Padding(padding: EdgeInsets.all(20), child: Text("Add your first mobile to see it here!")));
       return Column(
-        children: recentItems.map((item) => _ActivityTile(item: item)).toList(),
+        children: recentItems.map((item) => _ActivityTileRedesign(item: item)).toList(),
       );
     });
   }
 }
 
-class _ActionButton extends StatelessWidget {
+class _ActionCard extends StatelessWidget {
   final String label;
+  final String subtitle;
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
 
-  const _ActionButton({required this.label, required this.icon, required this.color, required this.onTap});
+  const _ActionCard({required this.label, required this.subtitle, required this.icon, required this.color, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4))],
         ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 8),
-            Text(label, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(height: 16),
+            Text(label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, letterSpacing: -0.3)),
+            Text(subtitle, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
           ],
         ),
       ),
@@ -364,88 +409,104 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-class _TransactionStatTile extends StatelessWidget {
+class _MatrixTile extends StatelessWidget {
   final String label;
   final String value;
+  final IconData icon;
   final Color color;
 
-  const _TransactionStatTile({required this.label, required this.value, required this.color});
+  const _MatrixTile({required this.label, required this.value, required this.icon, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.1)),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
+            child: Icon(icon, size: 14, color: color),
+          ),
+          const SizedBox(height: 10),
+          Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color, letterSpacing: -0.5), overflow: TextOverflow.ellipsis),
           const SizedBox(height: 4),
-          Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color), overflow: TextOverflow.ellipsis),
+          Text(label, style: const TextStyle(fontSize: 9, color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
         ],
       ),
     );
   }
 }
 
-class _ActivityTile extends StatelessWidget {
+class _ActivityTileRedesign extends StatelessWidget {
   final dynamic item;
-  const _ActivityTile({required this.item});
+  const _ActivityTileRedesign({required this.item});
 
   @override
   Widget build(BuildContext context) {
+    final isSold = item.status == 'Sold';
     return GestureDetector(
       onTap: () => Get.to(() => ProductDetailsScreen(device: item)),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.border.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
             Container(
-              width: 48,
-              height: 48,
+              width: 50,
+              height: 50,
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(12),
+                color: (isSold ? Colors.grey : AppColors.primary).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(14),
               ),
-              child: const Icon(Icons.phone_android_rounded, color: AppColors.primary),
+              child: Icon(Icons.phone_android_rounded, color: isSold ? Colors.grey : AppColors.primary, size: 24),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("${item.brand} ${item.model}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                  Text("${item.ram}/${item.storage} • ${item.networkStatus}", style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  Text("${item.brand} ${item.model}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: -0.5)),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      _buildSpecBadge(context, item.ram),
+                      const SizedBox(width: 6),
+                      _buildSpecBadge(context, item.storage),
+                      const SizedBox(width: 8),
+                      Text(item.networkStatus, style: const TextStyle(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+                    ],
+                  ),
                 ],
               ),
             ),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text("PKR ${item.sellingPrice.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.success)),
-                const SizedBox(height: 4),
+                Text(
+                  AppFormatters.formatCurrency(item.sellingPrice),
+                  style: TextStyle(fontWeight: FontWeight.bold, color: isSold ? Colors.grey : const Color(0xFF10B981), fontSize: 15),
+                ),
+                const SizedBox(height: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: (item.status == 'Available' ? AppColors.success : AppColors.textSecondary).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(6),
+                    color: (isSold ? Colors.grey : const Color(0xFF10B981)).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    item.status,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: item.status == 'Available' ? AppColors.success : AppColors.textSecondary,
-                    ),
+                    item.status.toUpperCase(),
+                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: isSold ? Colors.grey : const Color(0xFF10B981)),
                   ),
                 ),
               ],
@@ -453,6 +514,17 @@ class _ActivityTile extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSpecBadge(BuildContext context, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.border.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(text, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
     );
   }
 }

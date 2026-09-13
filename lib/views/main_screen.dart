@@ -3,12 +3,14 @@ import 'package:get/get.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:line_icons/line_icons.dart';
 
+import '../controllers/auth_controller.dart';
 import '../controllers/main_controller.dart';
 import '../utils/app_colors.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'inventory/inventory_list_screen.dart';
 import 'profile/profile_screen.dart';
 
+import 'admin/admin_user_list_screen.dart';
 import 'history/history_screen.dart';
 import 'trade/trade_screen.dart';
 
@@ -17,21 +19,25 @@ class MainScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final MainController controller = Get.put(MainController());
-
-    final List<Widget> screens = [
-      DashboardScreen(),
-      InventoryListScreen(),
-      const TradeScreen(),
-      const HistoryScreen(),
-      const ProfileScreen(),
-    ];
+    final MainController controller = Get.find<MainController>();
+    final AuthController authController = Get.find<AuthController>();
 
     return Scaffold(
-      body: Obx(() => IndexedStack(
-        index: controller.selectedIndex.value,
-        children: screens,
-      )),
+      body: Obx(() {
+        final List<Widget> screens = [
+          DashboardScreen(),
+          InventoryListScreen(),
+          const TradeScreen(),
+          const HistoryScreen(),
+          const ProfileScreen(),
+          if (authController.isAdmin.value) const AdminUserListScreen(),
+        ];
+        
+        return IndexedStack(
+          index: controller.selectedIndex.value,
+          children: screens,
+        );
+      }),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
@@ -50,8 +56,8 @@ class MainScreen extends StatelessWidget {
               hoverColor: Colors.grey[100]!,
               gap: 4,
               activeColor: AppColors.primary,
-              iconSize: 22,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              iconSize: 20,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
               duration: const Duration(milliseconds: 400),
               tabBackgroundColor: AppColors.primary.withValues(alpha: 0.1),
               color: Theme.of(context).brightness == Brightness.dark ? Colors.white54 : AppColors.textSecondary,
@@ -76,6 +82,11 @@ class MainScreen extends StatelessWidget {
                   icon: LineIcons.user,
                   text: 'Profile',
                 ),
+                if (authController.isAdmin.value)
+                  const GButton(
+                    icon: Icons.admin_panel_settings_outlined,
+                    text: 'Admin',
+                  ),
               ],
               selectedIndex: controller.selectedIndex.value,
               onTabChange: controller.changeTabIndex,

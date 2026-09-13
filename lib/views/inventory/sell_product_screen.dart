@@ -5,6 +5,7 @@ import '../../controllers/transaction_controller.dart';
 import '../../models/mobile_device_model.dart';
 import '../../models/transaction_model.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/formatters.dart';
 
 class SellProductScreen extends StatefulWidget {
   const SellProductScreen({super.key});
@@ -100,7 +101,7 @@ class _SellProductScreenState extends State<SellProductScreen> {
                     items: available.map((device) {
                       return DropdownMenuItem(
                         value: device,
-                        child: Text("${device.brand} ${device.model} (${device.storage})"),
+                        child: Text("${device.brand} ${device.model} (${AppFormatters.formatCurrency(device.sellingPrice)})"),
                       );
                     }).toList(),
                     onChanged: _onDeviceSelected,

@@ -15,9 +15,9 @@ class ProfileScreen extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile', style: TextStyle(fontWeight: FontWeight.bold)),
-      ),
+      // appBar: AppBar(
+      //   title: const Text('Profile', style: TextStyle(fontWeight: FontWeight.bold)),
+      // ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -63,11 +63,25 @@ class ProfileScreen extends StatelessWidget {
               const SizedBox(height: 48),
               
               // Settings Options
+              // _buildProfileOption(
+              //   context,
+              //   icon: Icons.store,
+              //   title: 'Shop Details',
+              //   onTap: () {},
+              // ),
+
               _buildProfileOption(
                 context,
-                icon: Icons.store,
-                title: 'Shop Details',
-                onTap: () {},
+                icon: Icons.edit,
+                title: 'Update Profile',
+                onTap: () => _showUpdateProfileDialog(context),
+              ),
+
+              _buildProfileOption(
+                context,
+                icon: Icons.lock,
+                title: 'Change Password',
+                onTap: () => _showChangePasswordDialog(context),
               ),
               
               // Theme Toggle
@@ -88,18 +102,18 @@ class ProfileScreen extends StatelessWidget {
                 )),
               ),
 
-              _buildProfileOption(
-                context,
-                icon: Icons.settings,
-                title: 'Settings',
-                onTap: () {},
-              ),
-              _buildProfileOption(
-                context,
-                icon: Icons.help_outline,
-                title: 'Help & Support',
-                onTap: () {},
-              ),
+              // _buildProfileOption(
+              //   context,
+              //   icon: Icons.settings,
+              //   title: 'Settings',
+              //   onTap: () {},
+              // ),
+              // _buildProfileOption(
+              //   context,
+              //   icon: Icons.help_outline,
+              //   title: 'Help & Support',
+              //   onTap: () {},
+              // ),
               
               const SizedBox(height: 32),
               
@@ -121,6 +135,97 @@ class ProfileScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showUpdateProfileDialog(BuildContext context) {
+    final authController = Get.find<AuthController>();
+    final nameController = TextEditingController(text: authController.currentUser.value?.name);
+    final shopNameController = TextEditingController(text: authController.currentUser.value?.shopName);
+
+    Get.dialog(
+      AlertDialog(
+        title: const Text("Update Profile"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: "Full Name"),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: shopNameController,
+              decoration: const InputDecoration(labelText: "Shop Name"),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text("Cancel")),
+          TextButton(
+            onPressed: () {
+              authController.updateUserDetails(
+                name: nameController.text.trim(),
+                shopName: shopNameController.text.trim(),
+              );
+              Get.back();
+            },
+            child: const Text("Update"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showChangePasswordDialog(BuildContext context) {
+    final authController = Get.find<AuthController>();
+    final oldPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+
+    Get.dialog(
+      AlertDialog(
+        title: const Text("Change Password"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: oldPasswordController,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: "Old Password"),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: newPasswordController,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: "New Password"),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: confirmPasswordController,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: "Confirm New Password"),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text("Cancel")),
+          TextButton(
+            onPressed: () {
+              if (newPasswordController.text != confirmPasswordController.text) {
+                Get.snackbar("Error", "Passwords do not match", backgroundColor: AppColors.error, colorText: Colors.white);
+                return;
+              }
+              authController.changeUserPassword(
+                oldPassword: oldPasswordController.text,
+                newPassword: newPasswordController.text,
+              );
+              Get.back();
+            },
+            child: const Text("Change"),
+          ),
+        ],
       ),
     );
   }
