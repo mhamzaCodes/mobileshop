@@ -47,3 +47,8 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    implementation("androidx.fragment:fragment:1.7.1")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+}

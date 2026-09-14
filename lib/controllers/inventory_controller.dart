@@ -1,6 +1,5 @@
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../models/person_details.dart';
 import 'auth_controller.dart';
 import '../models/mobile_device_model.dart';

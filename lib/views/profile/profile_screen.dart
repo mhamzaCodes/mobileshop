@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import '../../controllers/auth_controller.dart';
 import '../../controllers/theme_controller.dart';
+import '../../controllers/security_controller.dart';
 import '../../utils/app_colors.dart';
 import '../auth/login_screen.dart';
 
@@ -12,6 +14,7 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeController = Get.find<ThemeController>();
     final authController = Get.find<AuthController>();
+    final securityController = Get.find<SecurityController>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -98,6 +101,24 @@ class ProfileScreen extends StatelessWidget {
                   title: Text('Dark Mode', style: TextStyle(fontWeight: FontWeight.w600, color: Theme.of(context).textTheme.bodyMedium?.color)),
                   value: themeController.isDarkMode.value,
                   onChanged: (val) => themeController.toggleTheme(),
+                  activeColor: AppColors.primary,
+                )),
+              ),
+
+              // App Lock Toggle
+              Card(
+                color: Theme.of(context).cardColor,
+                elevation: 0,
+                margin: const EdgeInsets.only(bottom: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: isDark ? Colors.grey[800]! : AppColors.border),
+                ),
+                child: Obx(() => SwitchListTile(
+                  secondary: const Icon(Icons.security, color: AppColors.primary),
+                  title: Text('App Lock', style: TextStyle(fontWeight: FontWeight.w600, color: Theme.of(context).textTheme.bodyMedium?.color)),
+                  value: securityController.isLockEnabled.value,
+                  onChanged: (val) => securityController.toggleAppLock(val),
                   activeColor: AppColors.primary,
                 )),
               ),
