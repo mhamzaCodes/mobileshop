@@ -116,16 +116,16 @@ class LoginScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   
                   // Navigate to Register
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(AppStrings.noAccountText, style: TextStyle(color: AppColors.textSecondary)),
-                      TextButton(
-                        onPressed: () => Get.to(() => RegisterScreen()),
-                        child: const Text(AppStrings.registerNow, style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-                      ),
-                    ],
-                  ),
+                  // Row(
+                  //   mainAxisAlignment: MainAxisAlignment.center,
+                  //   children: [
+                  //     const Text(AppStrings.noAccountText, style: TextStyle(color: AppColors.textSecondary)),
+                  //     TextButton(
+                  //       onPressed: () => Get.to(() => RegisterScreen()),
+                  //       child: const Text(AppStrings.registerNow, style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                  //     ),
+                  //   ],
+                  // ),
                 ],
               ),
             ),

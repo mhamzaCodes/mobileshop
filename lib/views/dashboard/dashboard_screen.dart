@@ -21,16 +21,6 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: AppBar(
-      //   title: const Text(AppStrings.dashboardTitle, style: TextStyle(fontWeight: FontWeight.bold)),
-      //   actions: [
-      //     IconButton(
-      //       icon: const Icon(Icons.add_circle, color: AppColors.primary, size: 28),
-      //       onPressed: () => Get.to(() => const AddEditInventoryScreen()),
-      //     ),
-      //     const SizedBox(width: 8),
-      //   ],
-      // ),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
@@ -50,9 +40,11 @@ class DashboardScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 _buildQuickActions(),
                 const SizedBox(height: 32),
-                _buildSectionHeader("Cash Flow Analysis", trailing: _buildPeriodSelector(context)),
+                _buildSectionHeader("Cash Flow Cockpit", trailing: _buildPeriodSelector(context)),
                 const SizedBox(height: 16),
                 _buildTransactionMatrix(),
+                const SizedBox(height: 24),
+                _buildBarChart(context),
                 const SizedBox(height: 32),
                 _buildSectionHeader("Stock Insights"),
                 const SizedBox(height: 16),
@@ -116,7 +108,7 @@ class DashboardScreen extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)], // Modern Navy to Blue
+            colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -144,12 +136,13 @@ class DashboardScreen extends StatelessWidget {
               AppFormatters.formatCurrency(inventoryController.currentStockValue),
               style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: -1),
             ),
+            const Text("Total buying cost of available phones", style: TextStyle(color: Colors.white54, fontSize: 10)),
             const SizedBox(height: 24),
             Row(
               children: [
-                _buildFinanceMetric("Potential Profit", AppFormatters.formatCurrency(inventoryController.expectedProfit), Icons.trending_up),
+                _buildFinanceMetric("Profit Potential", AppFormatters.formatCurrency(inventoryController.expectedProfit), Icons.trending_up, subtitle: "Expected gain"),
                 const Spacer(),
-                _buildFinanceMetric("Units in Shop", "${inventoryController.totalDevicesAvailable}", Icons.inventory_2_outlined),
+                _buildFinanceMetric("In Shop", "${inventoryController.totalDevicesAvailable} Units", Icons.inventory_2_outlined, subtitle: "Total available"),
               ],
             ),
           ],
@@ -158,7 +151,7 @@ class DashboardScreen extends StatelessWidget {
     });
   }
 
-  Widget _buildFinanceMetric(String label, String value, IconData icon) {
+  Widget _buildFinanceMetric(String label, String value, IconData icon, {required String subtitle}) {
     return Row(
       children: [
         Container(
@@ -170,8 +163,9 @@ class DashboardScreen extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(color: Colors.white60, fontSize: 11)),
+            Text(label, style: const TextStyle(color: Colors.white60, fontSize: 10, fontWeight: FontWeight.bold)),
             Text(value, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+            Text(subtitle, style: const TextStyle(color: Colors.white38, fontSize: 8)),
           ],
         )
       ],
@@ -188,7 +182,7 @@ class DashboardScreen extends StatelessWidget {
         Expanded(
           child: _ActionCard(
             label: "Buy Product",
-            subtitle: "Purchase from local",
+            subtitle: "Add from seller",
             icon: Icons.add_shopping_cart_rounded,
             color: AppColors.primary,
             onTap: () => Get.to(() => const BuyProductScreen()),
@@ -198,9 +192,9 @@ class DashboardScreen extends StatelessWidget {
         Expanded(
           child: _ActionCard(
             label: "Sell Product",
-            subtitle: "Sell to customer",
+            subtitle: "Direct Customer Sale",
             icon: Icons.sell_rounded,
-            color: const Color(0xFF10B981), // Emerald
+            color: const Color(0xFF10B981),
             onTap: () => Get.to(() => const SellProductScreen()),
           ),
         ),
@@ -258,7 +252,8 @@ class DashboardScreen extends StatelessWidget {
         children: [
           Expanded(
             child: _MatrixTile(
-              label: "Revenue (In)",
+              label: "Cash Collected",
+              sublabel: "Total Sales",
               value: AppFormatters.formatCurrency(transactionController.totalInflow),
               icon: Icons.arrow_downward_rounded,
               color: const Color(0xFF10B981),
@@ -267,7 +262,8 @@ class DashboardScreen extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: _MatrixTile(
-              label: "Expense (Out)",
+              label: "Cash Spent",
+              sublabel: "New Stock Cost",
               value: AppFormatters.formatCurrency(transactionController.totalOutflow),
               icon: Icons.arrow_upward_rounded,
               color: const Color(0xFFEF4444),
@@ -276,8 +272,9 @@ class DashboardScreen extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: _MatrixTile(
-              label: "Net Profit",
-              value: AppFormatters.formatCurrency(transactionController.netIncome),
+              label: "Net Margin",
+              sublabel: "Actual Earnings",
+              value: AppFormatters.formatCurrency(transactionController.totalMargin),
               icon: Icons.account_balance_rounded,
               color: AppColors.primary,
             ),
@@ -285,6 +282,78 @@ class DashboardScreen extends StatelessWidget {
         ],
       );
     });
+  }
+
+  Widget _buildBarChart(BuildContext context) {
+    return Container(
+      height: 250,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.3)),
+      ),
+      child: Obx(() {
+        final chartData = transactionController.barChartData;
+        if (chartData.isEmpty) return const Center(child: Text("No transaction data."));
+
+        final labels = chartData.keys.toList();
+        final List<BarChartGroupData> barGroups = [];
+        
+        for (int i = 0; i < labels.length; i++) {
+          final data = chartData[labels[i]]!;
+          barGroups.add(
+            BarChartGroupData(
+              x: i,
+              barRods: [
+                BarChartRodData(toY: data['in']!, color: const Color(0xFF10B981), width: 12, borderRadius: BorderRadius.circular(4)),
+                BarChartRodData(toY: data['out']!, color: const Color(0xFFEF4444), width: 12, borderRadius: BorderRadius.circular(4)),
+              ],
+            ),
+          );
+        }
+
+        return Column(
+          children: [
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _ChartLegend(label: "Sales", color: Color(0xFF10B981)),
+                SizedBox(width: 20),
+                _ChartLegend(label: "Purchases", color: Color(0xFFEF4444)),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: BarChart(
+                BarChartData(
+                  barGroups: barGroups,
+                  borderData: FlBorderData(show: false),
+                  gridData: const FlGridData(show: false),
+                  titlesData: FlTitlesData(
+                    leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          if (value.toInt() < 0 || value.toInt() >= labels.length) return const SizedBox.shrink();
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(labels[value.toInt()], style: const TextStyle(fontSize: 9, color: AppColors.textSecondary)),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      }),
+    );
   }
 
   Widget _buildInventoryChart(BuildContext context) {
@@ -328,7 +397,7 @@ class DashboardScreen extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text("${inventoryController.totalDevicesAvailable}", style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: -1)),
-                      const Text("Stock Units", style: TextStyle(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
+                      const Text("In Stock", style: TextStyle(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
                     ],
                   )
                 ],
@@ -362,7 +431,7 @@ class DashboardScreen extends StatelessWidget {
   Widget _buildActivityFeed(BuildContext context) {
     return Obx(() {
       final recentItems = inventoryController.inventoryList.reversed.take(5).toList();
-      if (recentItems.isEmpty) return const Center(child: Padding(padding: EdgeInsets.all(20), child: Text("Add your first mobile to see it here!")));
+      if (recentItems.isEmpty) return const Center(child: Padding(padding: EdgeInsets.all(20), child: Text("No recent activity.")));
       return Column(
         children: recentItems.map((item) => _ActivityTileRedesign(item: item)).toList(),
       );
@@ -411,16 +480,17 @@ class _ActionCard extends StatelessWidget {
 
 class _MatrixTile extends StatelessWidget {
   final String label;
+  final String sublabel;
   final String value;
   final IconData icon;
   final Color color;
 
-  const _MatrixTile({required this.label, required this.value, required this.icon, required this.color});
+  const _MatrixTile({required this.label, required this.sublabel, required this.value, required this.icon, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(18),
@@ -434,11 +504,29 @@ class _MatrixTile extends StatelessWidget {
             child: Icon(icon, size: 14, color: color),
           ),
           const SizedBox(height: 10),
-          Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color, letterSpacing: -0.5), overflow: TextOverflow.ellipsis),
+          Text(value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color, letterSpacing: -0.5), overflow: TextOverflow.ellipsis),
           const SizedBox(height: 4),
-          Text(label, style: const TextStyle(fontSize: 9, color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+          Text(label, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+          Text(sublabel, style: const TextStyle(fontSize: 7, color: AppColors.textSecondary, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis),
         ],
       ),
+    );
+  }
+}
+
+class _ChartLegend extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _ChartLegend({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(width: 10, height: 10, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
+        const SizedBox(width: 8),
+        Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
+      ],
     );
   }
 }

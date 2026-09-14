@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../models/person_details.dart';
 import 'auth_controller.dart';
 import '../models/mobile_device_model.dart';
 
@@ -173,7 +174,7 @@ class InventoryController extends GetxController {
     }
   }
   
-  Future<void> markAsSold(String id) async {
+  Future<void> markAsSold(String id, {required PersonDetails buyer, required double actualSoldPrice}) async {
     final user = _authController.currentUser.value;
     if (user != null) {
       isLoading.value = true;
@@ -183,7 +184,12 @@ class InventoryController extends GetxController {
             .doc(user.uid)
             .collection(user.shopName)
             .doc(id)
-            .update({'status': 'Sold'});
+            .update({
+              'status': 'Sold',
+              'buyerDetails': buyer.toMap(),
+              'actualSoldPrice': actualSoldPrice,
+              'saleDate': DateTime.now().toIso8601String(),
+            });
       } finally {
         isLoading.value = false;
       }

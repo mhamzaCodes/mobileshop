@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import '../../controllers/inventory_controller.dart';
 import '../../models/mobile_device_model.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/formatters.dart';
 import 'add_edit_inventory_screen.dart';
+import 'sell_product_screen.dart';
 
 class ProductDetailsScreen extends StatelessWidget {
   final MobileDeviceModel device;
@@ -43,23 +45,21 @@ class ProductDetailsScreen extends StatelessWidget {
               _buildSectionTitle("IMEI Information"),
               _buildImeiList(context),
               const SizedBox(height: 24),
-              _buildSectionTitle("Accessories & Warranty"),
+              _buildSectionTitle("Accessories & Integrity"),
               _buildAccessoriesCard(context),
+              const SizedBox(height: 24),
+              _buildSectionTitle("Trade History"),
+              _buildHistorySection(context),
               const SizedBox(height: 32),
               if (device.status == 'Available')
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      inventoryController.markAsSold(device.id);
-                      Get.back();
-                      Get.snackbar("Success", "Device marked as sold", 
-                        backgroundColor: AppColors.success, colorText: Colors.white);
-                    },
-                    icon: const Icon(Icons.check_circle_outline),
-                    label: const Text("Mark as Sold", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    onPressed: () => Get.to(() => const SellProductScreen()),
+                    icon: const Icon(Icons.sell_outlined),
+                    label: const Text("Sell This Device", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.success,
+                      backgroundColor: const Color(0xFF10B981),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                   ),
@@ -69,6 +69,82 @@ class ProductDetailsScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildHistorySection(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        children: [
+          _buildHistoryTile(
+            context,
+            title: "Bought From",
+            person: device.sellerDetails?.name ?? "Unknown Seller",
+            contact: device.sellerDetails?.contact ?? "N/A",
+            date: device.purchaseDate,
+            amount: device.purchasePrice,
+            icon: Icons.download_rounded,
+            color: AppColors.primary,
+          ),
+          if (device.status == 'Sold') ...[
+            const Divider(height: 24),
+            _buildHistoryTile(
+              context,
+              title: "Sold To",
+              person: device.buyerDetails?.name ?? "Unknown Buyer",
+              contact: device.buyerDetails?.contact ?? "N/A",
+              date: device.saleDate,
+              amount: device.actualSoldPrice ?? device.sellingPrice,
+              icon: Icons.upload_rounded,
+              color: const Color(0xFF10B981),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHistoryTile(BuildContext context, {
+    required String title,
+    required String person,
+    required String contact,
+    required DateTime? date,
+    required double amount,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
+          child: Icon(icon, color: color, size: 18),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
+              Text(person, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              if (date != null)
+                Text(
+                  "${DateFormat('MMM dd, yyyy').format(date)} • $contact",
+                  style: const TextStyle(fontSize: 10, color: AppColors.textHint),
+                ),
+            ],
+          ),
+        ),
+        Text(
+          AppFormatters.formatCurrency(amount),
+          style: TextStyle(fontWeight: FontWeight.bold, color: color),
+        ),
+      ],
     );
   }
 
@@ -151,6 +227,10 @@ class ProductDetailsScreen extends StatelessWidget {
         _buildSpecItem(context, "Color", device.color, Icons.color_lens),
         _buildSpecItem(context, "Condition", device.condition, Icons.star_outline),
         _buildSpecItem(context, "Network", device.networkStatus, Icons.signal_cellular_alt),
+        _buildSpecItem(context, "Coverage", device.networkCoverage, Icons.cell_tower),
+        _buildSpecItem(context, "SIM", device.simType, Icons.sim_card_outlined),
+        if (device.batteryHealth != null)
+          _buildSpecItem(context, "Battery", "${device.batteryHealth}%", Icons.battery_charging_full),
       ],
     );
   }
@@ -190,22 +270,39 @@ class ProductDetailsScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
-        children: device.imeis.asMap().entries.map((entry) {
-          int idx = entry.key;
-          String imei = entry.value;
-          return Padding(
-            padding: EdgeInsets.only(bottom: idx == device.imeis.length - 1 ? 0 : 12.0),
-            child: Row(
-              children: [
-                const Icon(Icons.qr_code_2, size: 20, color: AppColors.textSecondary),
-                const SizedBox(width: 12),
-                Text("IMEI ${idx + 1}:", style: const TextStyle(color: AppColors.textSecondary)),
-                const SizedBox(width: 8),
-                Text(imei, style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.1)),
-              ],
+        children: [
+          ...device.imeis.asMap().entries.map((entry) {
+            int idx = entry.key;
+            String imei = entry.value;
+            return Padding(
+              padding: EdgeInsets.only(bottom: idx == device.imeis.length - 1 && device.serialNumber == null ? 0 : 12.0),
+              child: Row(
+                children: [
+                  const Icon(Icons.qr_code_2, size: 20, color: AppColors.textSecondary),
+                  const SizedBox(width: 12),
+                  Text("IMEI ${idx + 1}:", style: const TextStyle(color: AppColors.textSecondary)),
+                  const SizedBox(width: 8),
+                  Text(imei, style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+                ],
+              ),
+            );
+          }),
+          if (device.serialNumber != null) ...[
+            const Divider(),
+            Padding(
+              padding: const EdgeInsets.only(top: 12.0),
+              child: Row(
+                children: [
+                  const Icon(Icons.pin, size: 20, color: AppColors.textSecondary),
+                  const SizedBox(width: 12),
+                  const Text("Serial Number:", style: TextStyle(color: AppColors.textSecondary)),
+                  const SizedBox(width: 8),
+                  Text(device.serialNumber!, style: const TextStyle(fontWeight: FontWeight.bold)),
+                ],
+              ),
             ),
-          );
-        }).toList(),
+          ],
+        ],
       ),
     );
   }
@@ -224,19 +321,32 @@ class ProductDetailsScreen extends StatelessWidget {
           _buildCheckItem("Charger Included", device.hasCharger),
           const Divider(),
           _buildCheckItem("Active Warranty", device.hasWarranty),
+          const Divider(),
+          _buildCheckItem("Water Pack", device.isWaterPack),
+          const Divider(),
+          _buildCheckItem("Opened", device.isOpened, isNegative: true),
+          const Divider(),
+          _buildCheckItem("Repaired", device.isRepaired, isNegative: true),
         ],
       ),
     );
   }
 
-  Widget _buildCheckItem(String label, bool value) {
+  Widget _buildCheckItem(String label, bool value, {bool isNegative = false}) {
+    Color iconColor;
+    if (isNegative) {
+      iconColor = value ? AppColors.error : AppColors.success;
+    } else {
+      iconColor = value ? AppColors.success : AppColors.error;
+    }
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
         Icon(
-          value ? Icons.check_circle : Icons.cancel,
-          color: value ? AppColors.success : AppColors.error,
+          value ? Icons.check_circle : (isNegative ? Icons.check_circle_outline : Icons.cancel),
+          color: iconColor,
           size: 20,
         ),
       ],

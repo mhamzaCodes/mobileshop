@@ -1,7 +1,10 @@
+import 'person_details.dart';
+
 class TransactionModel {
   final String id;
   final String type; // 'Buy' or 'Sell'
   final double amount;
+  final double margin; // (SellingPrice - PurchasePrice) for 'Sell' type
   final DateTime date;
   final String productId;
   final String productName;
@@ -11,6 +14,7 @@ class TransactionModel {
     required this.id,
     required this.type,
     required this.amount,
+    required this.margin,
     required this.date,
     required this.productId,
     required this.productName,
@@ -21,6 +25,7 @@ class TransactionModel {
     return {
       'type': type,
       'amount': amount,
+      'margin': margin,
       'date': date.toIso8601String(),
       'productId': productId,
       'productName': productName,
@@ -33,38 +38,11 @@ class TransactionModel {
       id: id,
       type: data['type'] ?? '',
       amount: (data['amount'] as num?)?.toDouble() ?? 0.0,
+      margin: (data['margin'] as num?)?.toDouble() ?? 0.0,
       date: DateTime.parse(data['date']),
       productId: data['productId'] ?? '',
       productName: data['productName'] ?? '',
       personDetails: PersonDetails.fromMap(data['personDetails'] ?? {}),
-    );
-  }
-}
-
-class PersonDetails {
-  final String name;
-  final String contact;
-  final String cnic;
-
-  PersonDetails({
-    required this.name,
-    required this.contact,
-    required this.cnic,
-  });
-
-  Map<String, dynamic> toMap() {
-    return {
-      'name': name,
-      'contact': contact,
-      'cnic': cnic,
-    };
-  }
-
-  factory PersonDetails.fromMap(Map<String, dynamic> map) {
-    return PersonDetails(
-      name: map['name'] ?? '',
-      contact: map['contact'] ?? '',
-      cnic: map['cnic'] ?? '',
     );
   }
 }

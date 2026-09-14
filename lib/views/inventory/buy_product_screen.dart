@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../controllers/inventory_controller.dart';
 import '../../controllers/transaction_controller.dart';
 import '../../models/mobile_device_model.dart';
+import '../../models/person_details.dart';
 import '../../models/transaction_model.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_strings.dart';
@@ -27,6 +28,8 @@ class _BuyProductScreenState extends State<BuyProductScreen> {
   final _purchasePriceController = TextEditingController();
   final _sellingPriceController = TextEditingController();
   final _colorController = TextEditingController();
+  final _batteryHealthController = TextEditingController();
+  final _serialNumberController = TextEditingController();
   final List<TextEditingController> _imeiControllers = [TextEditingController()];
 
   // Seller Details
@@ -36,12 +39,27 @@ class _BuyProductScreenState extends State<BuyProductScreen> {
 
   String _condition = 'New';
   String _networkStatus = 'PTA Approved';
+  String _networkCoverage = '4G';
+  String _simType = 'Physical SIM';
   bool _hasBox = false;
   bool _hasCharger = false;
   bool _hasWarranty = false;
+  bool _isWaterPack = false;
+  bool _isOpened = false;
+  bool _isRepaired = false;
 
   final List<String> _conditions = ['New', 'Used - 10/10', 'Used - 9/10', 'Used - 8/10'];
-  final List<String> _networkStatuses = ['PTA Approved', 'Non-PTA', 'JV'];
+  final List<String> _networkStatuses = ['PTA Approved', 'Non-PTA', 'JV', 'Patch', 'CPID'];
+  final List<String> _networkCoverages = ['2G', '3G', '4G', '5G', '6G'];
+  final List<String> _simTypes = ['Physical SIM', 'eSIM', 'Physical + eSIM', 'Dual Physical SIM', 'Dual eSIM'];
+
+  @override
+  void initState() {
+    super.initState();
+    _brandController.addListener(() {
+      setState(() {});
+    });
+  }
 
   @override
   void dispose() {
@@ -52,6 +70,8 @@ class _BuyProductScreenState extends State<BuyProductScreen> {
     _purchasePriceController.dispose();
     _sellingPriceController.dispose();
     _colorController.dispose();
+    _batteryHealthController.dispose();
+    _serialNumberController.dispose();
     for (var c in _imeiControllers) {
       c.dispose();
     }
@@ -104,20 +124,32 @@ class _BuyProductScreenState extends State<BuyProductScreen> {
         hasCharger: _hasCharger,
         hasWarranty: _hasWarranty,
         networkStatus: _networkStatus,
+        networkCoverage: _networkCoverage,
+        simType: _simType,
+        isWaterPack: _isWaterPack,
+        isOpened: _isOpened,
+        isRepaired: _isRepaired,
+        serialNumber: _serialNumberController.text.trim().isEmpty ? null : _serialNumberController.text.trim(),
+        purchaseDate: DateTime.now(),
+        sellerDetails: PersonDetails(
+          name: _sellerNameController.text.trim(),
+          contact: _sellerContactController.text.trim(),
+          cnic: _sellerCnicController.text.trim(),
+        ),
+        batteryHealth: _brandController.text.trim().toLowerCase() == 'apple' 
+            ? double.tryParse(_batteryHealthController.text.trim()) 
+            : null,
       );
 
       final transaction = TransactionModel(
         id: "TX_$deviceId",
         type: 'Buy',
         amount: device.purchasePrice,
+        margin: 0,
         date: DateTime.now(),
         productId: deviceId,
         productName: "${device.brand} ${device.model}",
-        personDetails: PersonDetails(
-          name: _sellerNameController.text.trim(),
-          contact: _sellerContactController.text.trim(),
-          cnic: _sellerCnicController.text.trim(),
-        ),
+        personDetails: device.sellerDetails!,
       );
 
       await inventoryController.addDevice(device);
@@ -158,13 +190,29 @@ class _BuyProductScreenState extends State<BuyProductScreen> {
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Expanded(child: _buildTextField(_ramController, AppStrings.ramLabel, Icons.memory)),
+                    Expanded(child: _buildTextField(_ramController, AppStrings.ramLabel, Icons.memory, isNumber: true)),
                     const SizedBox(width: 12),
-                    Expanded(child: _buildTextField(_storageController, AppStrings.storageLabel, Icons.sd_storage)),
+                    Expanded(child: _buildTextField(_storageController, AppStrings.storageLabel, Icons.sd_storage, isNumber: true)),
                   ],
                 ),
                 const SizedBox(height: 12),
                 _buildTextField(_colorController, AppStrings.colorLabel, Icons.color_lens),
+                if (_brandController.text.trim().toLowerCase() == 'apple') ...[
+                  const SizedBox(height: 12),
+                  _buildTextField(
+                    _batteryHealthController, 
+                    "Battery Health (%)", 
+                    Icons.battery_charging_full, 
+                    isNumber: true,
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return "Required";
+                      final health = double.tryParse(v);
+                      if (health == null) return "Invalid";
+                      if (health > 100) return "Max 100%";
+                      return null;
+                    }
+                  ),
+                ],
 
                 const SizedBox(height: 24),
                 _buildSectionTitle("Pricing"),
@@ -177,11 +225,17 @@ class _BuyProductScreenState extends State<BuyProductScreen> {
                 ),
                 
                 const SizedBox(height: 24),
-                _buildSectionTitle("Condition & Accessories"),
+                _buildSectionTitle("Condition & Network"),
                 _buildDropdown("Condition", _condition, _conditions, (val) => setState(() => _condition = val!)),
                 const SizedBox(height: 12),
                 _buildDropdown("Network Status", _networkStatus, _networkStatuses, (val) => setState(() => _networkStatus = val!)),
                 const SizedBox(height: 12),
+                _buildDropdown("Network Coverage", _networkCoverage, _networkCoverages, (val) => setState(() => _networkCoverage = val!)),
+                const SizedBox(height: 12),
+                _buildDropdown("SIM Configuration", _simType, _simTypes, (val) => setState(() => _simType = val!)),
+                
+                const SizedBox(height: 24),
+                _buildSectionTitle("Accessories"),
                 Card(
                   elevation: 0,
                   color: Theme.of(context).cardColor,
@@ -213,6 +267,38 @@ class _BuyProductScreenState extends State<BuyProductScreen> {
                 ),
 
                 const SizedBox(height: 24),
+                _buildSectionTitle('Physical Integrity'),
+                Card(
+                  elevation: 0,
+                  color: Theme.of(context).cardColor,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[800]! : AppColors.border)),
+                  child: Column(
+                    children: [
+                      SwitchListTile(
+                        title: const Text("Water Pack"),
+                        value: _isWaterPack,
+                        onChanged: (val) => setState(() => _isWaterPack = val),
+                        activeColor: AppColors.primary,
+                      ),
+                      const Divider(height: 1),
+                      SwitchListTile(
+                        title: const Text("Opened"),
+                        value: _isOpened,
+                        onChanged: (val) => setState(() => _isOpened = val),
+                        activeColor: AppColors.primary,
+                      ),
+                      const Divider(height: 1),
+                      SwitchListTile(
+                        title: const Text("Repaired"),
+                        value: _isRepaired,
+                        onChanged: (val) => setState(() => _isRepaired = val),
+                        activeColor: AppColors.primary,
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
                 _buildSectionTitle(AppStrings.imeiSectionTitle),
                 ...List.generate(_imeiControllers.length, (index) {
                   return Padding(
@@ -231,7 +317,10 @@ class _BuyProductScreenState extends State<BuyProductScreen> {
                             ),
                             validator: (value) {
                               if (index == 0 && (value == null || value.isEmpty)) {
-                                return AppStrings.errorRequiredField;
+                                return "Required";
+                              }
+                              if (value != null && value.isNotEmpty && value.length != 15) {
+                                return "Must be 15 digits";
                               }
                               return null;
                             },
@@ -255,6 +344,8 @@ class _BuyProductScreenState extends State<BuyProductScreen> {
                       label: const Text(AppStrings.addImeiButton, style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
                     ),
                   ),
+                const SizedBox(height: 12),
+                _buildTextField(_serialNumberController, "Serial Number (Optional)", Icons.pin, isOptional: true),
 
                 const SizedBox(height: 32),
                 ElevatedButton(
@@ -286,7 +377,7 @@ class _BuyProductScreenState extends State<BuyProductScreen> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String label, IconData icon, {bool isNumber = false, TextInputType? keyboardType}) {
+  Widget _buildTextField(TextEditingController controller, String label, IconData icon, {bool isNumber = false, bool isOptional = false, String? Function(String?)? validator, TextInputType? keyboardType}) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType ?? (isNumber ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text),
@@ -296,9 +387,9 @@ class _BuyProductScreenState extends State<BuyProductScreen> {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
       ),
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return AppStrings.errorRequiredField;
+      validator: validator ?? (value) {
+        if (!isOptional && (value == null || value.trim().isEmpty)) {
+          return "Required";
         }
         return null;
       },

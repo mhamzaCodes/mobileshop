@@ -1,3 +1,5 @@
+import 'person_details.dart';
+
 class MobileDeviceModel {
   String id;
   String brand;
@@ -13,7 +15,21 @@ class MobileDeviceModel {
   bool hasBox;
   bool hasCharger;
   bool hasWarranty;
-  String networkStatus; // 'PTA Approved', 'Non-PTA', 'JV'
+  String networkStatus; // 'PTA Approved', 'Non-PTA', 'JV', 'Patch', 'CPID'
+  String networkCoverage; // '2G', '3G', '4G', '5G', '6G'
+  double? batteryHealth; // For Apple devices
+  bool isWaterPack;
+  bool isOpened;
+  bool isRepaired;
+  String? serialNumber;
+  String simType;
+  
+  // History Fields
+  PersonDetails? sellerDetails;
+  PersonDetails? buyerDetails;
+  DateTime? purchaseDate;
+  DateTime? saleDate;
+  double? actualSoldPrice;
 
   MobileDeviceModel({
     required this.id,
@@ -31,27 +47,19 @@ class MobileDeviceModel {
     required this.hasCharger,
     required this.hasWarranty,
     required this.networkStatus,
+    required this.networkCoverage,
+    this.batteryHealth,
+    this.isWaterPack = false,
+    this.isOpened = false,
+    this.isRepaired = false,
+    this.serialNumber,
+    required this.simType,
+    this.sellerDetails,
+    this.buyerDetails,
+    this.purchaseDate,
+    this.saleDate,
+    this.actualSoldPrice,
   });
-
-  factory MobileDeviceModel.fromJson(Map<String, dynamic> json) {
-    return MobileDeviceModel(
-      id: json['id'],
-      brand: json['brand'],
-      model: json['model'],
-      ram: json['ram'],
-      storage: json['storage'],
-      purchasePrice: (json['purchasePrice'] as num).toDouble(),
-      sellingPrice: (json['sellingPrice'] as num).toDouble(),
-      status: json['status'],
-      imeis: List<String>.from(json['imeis'] ?? []),
-      color: json['color'],
-      condition: json['condition'],
-      hasBox: json['hasBox'] ?? false,
-      hasCharger: json['hasCharger'] ?? false,
-      hasWarranty: json['hasWarranty'] ?? false,
-      networkStatus: json['networkStatus'],
-    );
-  }
 
   factory MobileDeviceModel.fromFirestore(Map<String, dynamic> data, String id) {
     return MobileDeviceModel(
@@ -70,6 +78,18 @@ class MobileDeviceModel {
       hasCharger: data['hasCharger'] ?? false,
       hasWarranty: data['hasWarranty'] ?? false,
       networkStatus: data['networkStatus'] ?? 'PTA Approved',
+      networkCoverage: data['networkCoverage'] ?? '4G',
+      batteryHealth: data['batteryHealth'] != null ? (data['batteryHealth'] as num).toDouble() : null,
+      isWaterPack: data['isWaterPack'] ?? false,
+      isOpened: data['isOpened'] ?? false,
+      isRepaired: data['isRepaired'] ?? false,
+      serialNumber: data['serialNumber'],
+      simType: data['simType'] ?? 'Physical SIM',
+      sellerDetails: data['sellerDetails'] != null ? PersonDetails.fromMap(data['sellerDetails']) : null,
+      buyerDetails: data['buyerDetails'] != null ? PersonDetails.fromMap(data['buyerDetails']) : null,
+      purchaseDate: data['purchaseDate'] != null ? DateTime.parse(data['purchaseDate']) : null,
+      saleDate: data['saleDate'] != null ? DateTime.parse(data['saleDate']) : null,
+      actualSoldPrice: (data['actualSoldPrice'] as num?)?.toDouble(),
     );
   }
 
@@ -89,62 +109,18 @@ class MobileDeviceModel {
       'hasCharger': hasCharger,
       'hasWarranty': hasWarranty,
       'networkStatus': networkStatus,
+      'networkCoverage': networkCoverage,
+      'batteryHealth': batteryHealth,
+      'isWaterPack': isWaterPack,
+      'isOpened': isOpened,
+      'isRepaired': isRepaired,
+      'serialNumber': serialNumber,
+      'simType': simType,
+      'sellerDetails': sellerDetails?.toMap(),
+      'buyerDetails': buyerDetails?.toMap(),
+      'purchaseDate': purchaseDate?.toIso8601String(),
+      'saleDate': saleDate?.toIso8601String(),
+      'actualSoldPrice': actualSoldPrice,
     };
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'brand': brand,
-      'model': model,
-      'ram': ram,
-      'storage': storage,
-      'purchasePrice': purchasePrice,
-      'sellingPrice': sellingPrice,
-      'status': status,
-      'imeis': imeis,
-      'color': color,
-      'condition': condition,
-      'hasBox': hasBox,
-      'hasCharger': hasCharger,
-      'hasWarranty': hasWarranty,
-      'networkStatus': networkStatus,
-    };
-  }
-
-  MobileDeviceModel copyWith({
-    String? id,
-    String? brand,
-    String? model,
-    String? ram,
-    String? storage,
-    double? purchasePrice,
-    double? sellingPrice,
-    String? status,
-    List<String>? imeis,
-    String? color,
-    String? condition,
-    bool? hasBox,
-    bool? hasCharger,
-    bool? hasWarranty,
-    String? networkStatus,
-  }) {
-    return MobileDeviceModel(
-      id: id ?? this.id,
-      brand: brand ?? this.brand,
-      model: model ?? this.model,
-      ram: ram ?? this.ram,
-      storage: storage ?? this.storage,
-      purchasePrice: purchasePrice ?? this.purchasePrice,
-      sellingPrice: sellingPrice ?? this.sellingPrice,
-      status: status ?? this.status,
-      imeis: imeis ?? this.imeis,
-      color: color ?? this.color,
-      condition: condition ?? this.condition,
-      hasBox: hasBox ?? this.hasBox,
-      hasCharger: hasCharger ?? this.hasCharger,
-      hasWarranty: hasWarranty ?? this.hasWarranty,
-      networkStatus: networkStatus ?? this.networkStatus,
-    );
   }
 }

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../controllers/inventory_controller.dart';
 import '../../controllers/transaction_controller.dart';
 import '../../models/mobile_device_model.dart';
+import '../../models/person_details.dart';
 import '../../models/transaction_model.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/formatters.dart';
@@ -45,22 +46,28 @@ class _SellProductScreenState extends State<SellProductScreen> {
 
   void _processSale() async {
     if (_formKey.currentState!.validate() && _selectedDevice != null) {
+      final double soldAmount = double.tryParse(_sellingAmountController.text) ?? _selectedDevice!.sellingPrice;
+      final double margin = soldAmount - _selectedDevice!.purchasePrice;
+
+      final buyer = PersonDetails(
+        name: _buyerNameController.text.trim(),
+        contact: _buyerContactController.text.trim(),
+        cnic: _buyerCnicController.text.trim(),
+      );
+
       final transaction = TransactionModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         type: 'Sell',
-        amount: double.tryParse(_sellingAmountController.text) ?? _selectedDevice!.sellingPrice,
+        amount: soldAmount,
+        margin: margin,
         date: DateTime.now(),
         productId: _selectedDevice!.id,
         productName: "${_selectedDevice!.brand} ${_selectedDevice!.model}",
-        personDetails: PersonDetails(
-          name: _buyerNameController.text.trim(),
-          contact: _buyerContactController.text.trim(),
-          cnic: _buyerCnicController.text.trim(),
-        ),
+        personDetails: buyer,
       );
 
       await transactionController.addTransaction(transaction);
-      await inventoryController.markAsSold(_selectedDevice!.id);
+      await inventoryController.markAsSold(_selectedDevice!.id, buyer: buyer, actualSoldPrice: soldAmount);
 
       Get.back();
       Get.snackbar("Success", "Product sold successfully!", 
